@@ -268,7 +268,7 @@ struct EditorView: View {
                     Button("Open reading window") { model.present() }.buttonStyle(.borderedProminent).keyboardShortcut(.return, modifiers: .command)
                 }
                 Text("Place the reading window near your camera. [Bracketed cues] are skipped by voice following.").font(.caption).foregroundStyle(.secondary)
-                Text("Capture hiding is not guaranteed on modern macOS. Keep the reading window outside a CleanShot region recording until a real capture test passes.").font(.caption).foregroundStyle(.secondary)
+                Text("CleanShot exclusion FAILED on this Mac (macOS 26.2). This app is not suitable for invisible screen recording.").font(.caption).foregroundStyle(.secondary)
             }.padding(24).frame(minWidth: 500)
         }.frame(minWidth: 800, minHeight: 540)
     }
@@ -284,11 +284,15 @@ final class ReadingPanel: NSPanel {
     var editor: NSWindow!
     var overlay: NSPanel!
     var statusItem: NSStatusItem!
+    var captureBackdrop: NSWindow?
+    var captureProbe: NSWindow?
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         let menu = NSMenu(); let appMenu = NSMenu(); let root = NSMenuItem(); root.submenu = appMenu; menu.addItem(root)
         appMenu.addItem(withTitle: "Show editor", action: #selector(showEditor), keyEquivalent: "e").target = self
         appMenu.addItem(withTitle: "Show reading window", action: #selector(showReading), keyEquivalent: "r").target = self
+        appMenu.addItem(withTitle: "Verify recording privacy…", action: #selector(verifyCapture), keyEquivalent: "").target = self
+        appMenu.addItem(withTitle: "Finish recording test", action: #selector(endCaptureTest), keyEquivalent: "").target = self
         appMenu.addItem(.separator()); appMenu.addItem(withTitle: "Quit Keira Prompter", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let editMenu = NSMenu(title: "Edit"); let editRoot = NSMenuItem(title: "Edit", action: nil, keyEquivalent: ""); editRoot.submenu = editMenu; menu.addItem(editRoot)
         for (title, action, key) in [("Undo", "undo:", "z"),("Cut", "cut:", "x"),("Copy", "copy:", "c"),("Paste", "paste:", "v"),("Select All", "selectAll:", "a")] { editMenu.addItem(withTitle: title, action: Selector(action), keyEquivalent: key) }
@@ -311,6 +315,22 @@ final class ReadingPanel: NSPanel {
         statusItem.menu = statusMenu
         model.showEditor = { [weak self] in self?.showEditor() }; model.showOverlay = { [weak self] in self?.overlay.makeKeyAndOrderFront(nil) }
         showEditor()
+    }
+    @objc func verifyCapture() {
+        captureProbe?.close(); captureBackdrop?.close()
+        model.stopListening(); model.stopScrolling(); editor.orderOut(nil); overlay.orderOut(nil)
+        let frame = NSScreen.main!.frame
+        let backdrop = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
+        backdrop.isReleasedWhenClosed = false; backdrop.title = "Recording test background"
+        backdrop.contentView = NSHostingView(rootView: ZStack { Color.green; VStack(spacing: 60) { ForEach(0..<6) { _ in Text("BACKGROUND — THIS MUST REMAIN VISIBLE").font(.system(size: 32, weight: .bold)).foregroundStyle(.black) } } })
+        captureBackdrop = backdrop; backdrop.makeKeyAndOrderFront(nil)
+        let probe = NSWindow(contentRect: NSRect(x: frame.midX-280, y: frame.midY-160, width: 560, height: 320), styleMask: [.titled], backing: .buffered, defer: false)
+        probe.title = "Capture test — protected"; probe.isReleasedWhenClosed = false; probe.level = .floating; probe.sharingType = .none
+        probe.contentView = NSHostingView(rootView: ZStack { Color.purple; VStack(spacing: 24) { Text("PRIVATE SCRIPT TEST").font(.system(size: 38, weight: .bold)); Text("This purple window must disappear completely in the protected recording. The green background must stay visible.").font(.title2).multilineTextAlignment(.center); Text("If this window appears in the video, exclusion FAILED.").font(.headline) }.padding(28).foregroundStyle(.white) })
+        captureProbe = probe; probe.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
+    }
+    @objc func endCaptureTest() {
+        captureProbe?.close(); captureProbe = nil; captureBackdrop?.close(); captureBackdrop = nil; showEditor()
     }
     @objc func showEditor() { if model.listening { model.stopListening() }; model.stopScrolling(); editor.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     @objc func showReading() { model.present() }

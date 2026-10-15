@@ -6,9 +6,13 @@ The installed app is `~/Applications/Keira Prompter.app`. Open it from Finder, S
 
 Paste a script in the editor, name it and click Open reading window. Scripts auto-save locally under `~/Library/Application Support/Keira Prompter/scripts.json`. The reading window floats over other apps. Follow voice requests macOS speech and microphone permission and requires on-device English (UK) recognition. The app never falls back to sending audio to a cloud recognizer. Auto-scroll works without microphone access. Use Restart to return to the beginning, A−/A+ for text size, and the editor's speed/opacity sliders to adjust appearance. Bracketed cues remain visible but are skipped by speech matching. The menu-bar icon can reopen the editor or overlay.
 
-## Capture limitation — acceptance not yet complete
+## CleanShot exclusion — FAILED on this Mac
 
-The overlay requests `NSWindow.sharingType = .none`, but Apple describes this as a legacy capture flag. It is not a guarantee of invisibility in ScreenCaptureKit-based recorders on modern macOS. Full CleanShot exclusion must be verified against a completed real capture before using this app for that purpose. Until then, place the overlay outside the selected recording region; full-screen invisibility is unverified. Never call this a verified VoicePrompter Mac replacement until that check and a real voice-following test pass.
+The controlled full-display CleanShot test on macOS 26.2 FAILED: the purple test window, with `sharingType = .none`, appears over the green test background in the saved recording. This supersedes the earlier inconclusive blank-region frames. Do not use this build as an invisible CleanShot teleprompter. Apple describes this flag as legacy and no longer used: https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum .
+
+The app menu's “Verify recording privacy…” opens a plain green background and a protected purple test window without microphone access or changing scripts. Record the display, then inspect the saved video: purple visible means failure. “Finish recording test” closes both test windows. The editor now states the failed result explicitly.
+
+Evidence remains local in CleanShot history: `media_w9Vkm5Tvoy/CleanShot 2026-10-15 at 14.05.44.mp4`, 23.0617 seconds, 3436×1436, video only. The frame at 16 seconds clearly includes the protected window. No screenshots or recordings containing desktop context are pushed to GitHub.
 
 ## Build and install
 
@@ -34,3 +38,5 @@ Checklist self-review (the standing rule overrides the older checklist's mandato
 3. **Pass:** no embedded credentials or cloud speech fallback; normal secret hooks retained. Hiding the overlay and opening the editor pause capture/scrolling. No security warnings or OS permissions bypassed.
 4. **Not applicable:** no client-facing agent behavior changed.
 5. **Pass for installed build; acceptance limited:** installed bundle signature and plist verified and native UI read back. Auto-scroll and matching/persistence tests pass. Actual spoken recognition and full-screen CleanShot exclusion remain unverified. Notchie can be restored from Bin; the native app can be removed without deleting scripts.
+
+15 October follow-up: captured full-display test failure and corrected the UI and docs. Added CleanShot Record Screen / Stop Recording shortcut Control–Option–Command–R for a reliable test stop. No paid product purchased. The official VoicePrompter native free tier advertises 3 scripts and capture hiding, but that product is not yet verified with this setup.
