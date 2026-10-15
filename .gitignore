@@ -10,3 +10,6 @@ dist/
 
 # Claude Cowork artifact
 AGENTS.md
+
+# Native build output
+dist-native/
