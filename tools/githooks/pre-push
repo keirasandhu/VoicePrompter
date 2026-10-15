@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Blocks secrets from being pushed: checks every commit that no remote has yet.
+top=$(git rev-parse --show-toplevel)
+while read -r _ local_sha _ _; do
+  case "$local_sha" in 0000000000000000000000000000000000000000) continue;; esac
+  for c in $(git rev-list "$local_sha" --not --remotes); do
+    parent=$(git rev-parse --verify -q "$c^" || git hash-object -t tree /dev/null)
+    "$top/tools/check-secrets.sh" "$parent" "$c" || { echo "in commit $(git log -1 --format='%h %s' $c)" >&2; exit 1; }
+  done
+done
